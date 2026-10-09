@@ -1,0 +1,34 @@
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: exo8-postgres
+    environment:
+      POSTGRES_DB: dogsdb
+      POSTGRES_USER: dogsuser
+      POSTGRES_PASSWORD: exo8-postgres-2026
+    ports:
+      - "5433:5432"
+    volumes:
+      - exo8-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dogsuser -d dogsdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    image: exo8-dogs-api:1.0
+    container_name: exo8-api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/dogsdb
+      SPRING_DATASOURCE_USERNAME: dogsuser
+      SPRING_DATASOURCE_PASSWORD: exo8-postgres-2026
+    ports:
+      - "8081:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  exo8-postgres-data:

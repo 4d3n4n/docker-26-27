@@ -1,0 +1,51 @@
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: exo9-postgres
+    environment:
+      POSTGRES_DB: dogslogsdb
+      POSTGRES_USER: dogslogsuser
+      POSTGRES_PASSWORD: exo9-postgres-2026
+    ports:
+      - "5434:5432"
+    volumes:
+      - exo9-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dogslogsuser -d dogslogsdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  logs-api:
+    build: ./logs-api
+    image: exo9-logs-api:1.0
+    container_name: exo9-logs-api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/dogslogsdb
+      SPRING_DATASOURCE_USERNAME: dogslogsuser
+      SPRING_DATASOURCE_PASSWORD: exo9-postgres-2026
+    ports:
+      - "8082:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  crud-api:
+    build: ./crud-api
+    image: exo9-crud-api:1.0
+    container_name: exo9-crud-api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/dogslogsdb
+      SPRING_DATASOURCE_USERNAME: dogslogsuser
+      SPRING_DATASOURCE_PASSWORD: exo9-postgres-2026
+      LOGS_API_URL: http://logs-api:8080/api/v1/logs
+    ports:
+      - "8083:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+      logs-api:
+        condition: service_started
+
+volumes:
+  exo9-postgres-data:

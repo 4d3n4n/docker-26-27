@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/dogsdb}
+    username: ${SPRING_DATASOURCE_USERNAME:dogsuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:exo8-postgres-2026}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
