@@ -1,0 +1,8 @@
+# Uniquement pour le registre HTTP local des TP ; utiliser TLS en CI/production.
+[registry."localhost:5000"]
+  http = true
+  insecure = true
+
+[registry."127.0.0.1:5000"]
+  http = true
+  insecure = true
