@@ -1,6 +1,91 @@
-# Registre "de dev" monté à la va-vite : à sécuriser (TLS, auth, persistance, suppression autorisée)
+name: shop-registry
+
 services:
   registry:
-    image: registry:2
+    image: registry:2.8.3
+    restart: unless-stopped
+    volumes:
+      - registry-data:/var/lib/registry
+      - ./config.yml:/etc/docker/registry/config.yml:ro
+      - ./secrets/auth/users.htpasswd:/auth/users.htpasswd:ro
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5000/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  gateway:
+    image: nginx:1.29.3-alpine
+    restart: unless-stopped
+    depends_on:
+      registry:
+        condition: service_healthy
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./secrets/tls/server.crt:/etc/nginx/tls/server.crt:ro
+      - ./secrets/tls/server.key:/etc/nginx/tls/server.key:ro
+      - ./secrets/auth/users.htpasswd:/etc/nginx/auth/users.htpasswd:ro
+      - ./secrets/auth/ci.htpasswd:/etc/nginx/auth/ci.htpasswd:ro
+    networks:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --no-check-certificate -O /dev/null https://127.0.0.1/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  ui:
+    image: joxit/docker-registry-ui:2.6.0
+    restart: unless-stopped
+    depends_on:
+      gateway:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:80"
+    environment:
+      SINGLE_REGISTRY: "true"
+      REGISTRY_URL: "http://localhost:8081"
+      PULL_URL: "registry.local:5000"
+      NGINX_PROXY_PASS_URL: "https://gateway:443"
+      NGINX_RESOLVER: "127.0.0.11"
+      REGISTRY_TITLE: "Shop SAS Registry"
+      REGISTRY_SECURED: "true"
+      DELETE_IMAGES: "false"
+      SHOW_CONTENT_DIGEST: "true"
+    networks:
+      - frontend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  mirror:
+    image: registry:2.8.3
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5001:5000"
+    volumes:
+      - mirror-data:/var/lib/registry
+      - ./mirror-config.yml:/etc/docker/registry/config.yml:ro
+    networks:
+      - frontend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5000/v2/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  backend:
+    internal: true
+  frontend: {}
+
+volumes:
+  registry-data: {}
+  mirror-data: {}

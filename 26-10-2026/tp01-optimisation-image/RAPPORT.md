@@ -1,10 +1,10 @@
 # TP01 — Rapport d'optimisation de `shopapi`
 
-Le Dockerfile livré est [`starter/shopapi/Dockerfile`](starter/shopapi/Dockerfile). Le code applicatif n'a pas été modifié. Les dépendances sont verrouillées dans [`starter/shopapi/package-lock.json`](starter/shopapi/package-lock.json) et le contexte de build est filtré par [`.dockerignore`](starter/shopapi/.dockerignore).
+Le Dockerfile final est [`starter/shopapi/Dockerfile`](starter/shopapi/Dockerfile). Le code applicatif n'a pas été modifié. Les dépendances sont verrouillées dans [`starter/shopapi/package-lock.json`](starter/shopapi/package-lock.json) et le contexte de build est filtré par [`.dockerignore`](starter/shopapi/.dockerignore). Le Dockerfile historique (« avant ») est conservé dans le commit Git `9aa6337` ; il contient un identifiant de l'exercice, donc il n'est pas dupliqué dans les fichiers courants.
 
 ## Avant / après
 
-Mesures sur Docker Desktop arm64, le 26/10/2026. Les tailles sont celles de `docker image inspect .Size` (octets de couches non compressées).
+Mesures sur Docker Desktop arm64, le 26/10/2026, comparant `shopapi:legacy` à `shopapi:1.4.2`. Les tailles sont celles de `docker image inspect .Size` (octets de couches non compressées). Le TP03 a ensuite mis à jour la base Alpine du Dockerfile et produit `shopapi:1.4.3` ; les chiffres ci-dessous ne mesurent pas cette nouvelle version.
 
 | Mesure | Image historique | Image finale |
 | --- | ---: | ---: |
@@ -26,7 +26,7 @@ L'énoncé anticipe 10 s pour l'arrêt historique ; la mesure locale donne 3,12 
 node:20.19.5-alpine3.22 (version et digest épinglés)
 ├── package.json + package-lock.json → npm ci → sources + tests → npm test + npm run lint
 └── package.json + package-lock.json → npm ci --omit=dev
-alpine:3.22.2 (version et digest épinglés)
+alpine:3.22.2 (base de l'image 1.4.2, version et digest épinglés)
     → binaire Node 20 et bibliothèques nécessaires depuis l'image officielle Node
     → dépendances de production
     → sources issues de l'étape test
