@@ -1,0 +1,36 @@
+services:
+  proxy:
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=shop_front
+      - --entrypoints.web.address=:80
+      - --entrypoints.traefik.address=:8080
+      - --ping=true
+      - --api.insecure=true
+      - --accesslog=true
+    ports:
+      - "127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
+
+  db:
+    ports:
+      - "127.0.0.1:${DB_DEBUG_PORT:-5432}:5432"
+
+  api:
+    volumes:
+      - ./apps/shopapi/src:/app/src:ro
+    ports:
+      - "127.0.0.1:${API_DEBUG_PORT:-3000}:3000"
+    environment:
+      LOG_LEVEL: debug
+    command:
+      - sh
+      - -ec
+      - |
+        db_password="$$(cat /run/secrets/db_password)"
+        export DATABASE_URL="postgresql://shop:$${db_password}@db:5432/shop"
+        exec node --watch src/server.js
+
+  worker:
+    environment:
+      LOG_LEVEL: DEBUG
